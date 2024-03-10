@@ -66,6 +66,7 @@ def make_label(
         pady=(padding[2], padding[3]),
     )
     label.configure(background="goldenrod")
+    return label
 
 
 def make_frame(master, row, column, padding=(0, 0, 0, 0)):
