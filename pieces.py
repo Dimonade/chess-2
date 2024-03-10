@@ -1,6 +1,5 @@
-from tkinter import messagebox
+import tkinter as tk
 from abstract_piece import Piece, movement, get_attacked_positions
-import keyboard
 
 letters_numbers = {
     1: "a",
@@ -230,22 +229,43 @@ class King(Piece):
 
 def attempt_promote(piece, game_pieces, game_tiles, ep):
     if piece.piece_type == "pawn" and piece.location[1] in {"1", "8"}:
-        message = (
-            "press q to promote to queen, k to a knight, b to a bishop or r to a rook"
-        )
-        messagebox.showinfo("promotion", message)
-        x1, x2 = piece.piece_colour, piece.location
-        d = {
-            "q": Queen(x1, x2, game_pieces, game_tiles, ep),
-            "k": Knight(x1, x2, game_pieces, game_tiles, ep),
-            "b": Bishop(x1, x2, game_pieces, game_tiles, ep),
-            "r": Rook(x1, x2, game_pieces, game_tiles, ep),
-        }
+        win = tk.Toplevel()
+        win.title("Promotion")
+        selection = tk.StringVar(master=win, value="Q")
+        submission_made = tk.BooleanVar(master=win, value=False)
+        message_label = tk.Label(master=win, text="Please choose promotion")
+        message_label.grid(row=0, column=0)
 
-        pressed = ""
-        while pressed not in d.keys():
-            pressed = keyboard.read_key()
-        game_pieces[piece.location] = d[pressed]
-        return True, pressed.upper()
+        def make_radio_button(text, value, row):
+            _ = tk.Radiobutton(master=win, text=text, variable=selection, value=value)
+            _.grid(row=row, column=0)
+
+        make_radio_button("Queen", "Q", 1)
+        make_radio_button("Rook", "R", 2)
+        make_radio_button("Bishop", "B", 3)
+        make_radio_button("Knight", "K", 4)
+
+        def get_choice(piece, game_pieces, game_tiles, ep):
+            x1, x2 = piece.piece_colour, piece.location
+            d = {
+                "q": Queen(x1, x2, game_pieces, game_tiles, ep),
+                "k": Knight(x1, x2, game_pieces, game_tiles, ep),
+                "b": Bishop(x1, x2, game_pieces, game_tiles, ep),
+                "r": Rook(x1, x2, game_pieces, game_tiles, ep),
+            }
+            game_pieces[piece.location] = d[selection.get()[0].lower()]
+            submission_made.set(True)
+
+        submit_button = tk.Button(
+            master=win,
+            text="select",
+            command=lambda: get_choice(piece, game_pieces, game_tiles, ep),
+        )
+        submit_button.grid(row=5, column=0)
+
+        win.waitvar(submission_made)
+        win.destroy()
+        return True, selection.get()[0].upper()
+
     else:
         return False, ""
