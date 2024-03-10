@@ -1,10 +1,28 @@
-letters_numbers = {1: 'a', 2: 'b', 3: 'c', 4: 'd', 5: 'e', 6: 'f', 7: 'g', 8: 'h',
-                   'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5, 'f': 6, 'g': 7, 'h': 8}
-opposite_colour = {'black': 'white', 'white': 'black'}
+letters_numbers = {
+    1: "a",
+    2: "b",
+    3: "c",
+    4: "d",
+    5: "e",
+    6: "f",
+    7: "g",
+    8: "h",
+    "a": 1,
+    "b": 2,
+    "c": 3,
+    "d": 4,
+    "e": 5,
+    "f": 6,
+    "g": 7,
+    "h": 8,
+}
+opposite_colour = {"black": "white", "white": "black"}
 
 
 class Piece:
-    def __init__(self, colour, piece_type, location, game_pieces, game_tiles, en_passant_manager):
+    def __init__(
+        self, colour, piece_type, location, game_pieces, game_tiles, en_passant_manager
+    ):
         self.game_pieces = game_pieces
         self.game_tiles = game_tiles
         self.en_passant_manager = en_passant_manager
@@ -13,7 +31,7 @@ class Piece:
         self.location = location
         self.piece_unmoved = True
         self.active = True
-        self.new_location = ''
+        self.new_location = ""
         self.enemy_colour = opposite_colour[colour]
         self.enemy_king_location = get_king(game_pieces, self.enemy_colour)
         self.legal_moves = set()
@@ -33,8 +51,16 @@ class Piece:
         self.location = None
 
     def value_estimate(self):
-        piece_values = {'None': 0, 'rook': 5, 'knight': 3, 'bishop': 3, 'queen': 9, 'king': 0, 'pawn': 1}
-        d = {'white': 1, 'black': -1, 'None': 0}
+        piece_values = {
+            "None": 0,
+            "rook": 5,
+            "knight": 3,
+            "bishop": 3,
+            "queen": 9,
+            "king": 0,
+            "pawn": 1,
+        }
+        d = {"white": 1, "black": -1, "None": 0}
         return piece_values[self.piece_type] * d[self.piece_colour]
 
     def find_vector(self):
@@ -48,7 +74,7 @@ class Piece:
         if 0 in (v1, v2) or abs(v1) == abs(v2):
             return self.sign(v1), self.sign(v2)
         else:
-            return 'invalid'
+            return "invalid"
 
     @staticmethod
     def sign(x):
@@ -61,11 +87,11 @@ class Piece:
 
     def move_blocked(self, new_location):
         self.new_location = new_location
-        if self.piece_type == 'knight':
+        if self.piece_type == "knight":
             return False
         else:
             direction = self.find_direction()
-            if direction != 'invalid':
+            if direction != "invalid":
                 location = add_coordinate(self.location, direction)
                 while location != new_location:
                     if location in self.game_pieces.keys():
@@ -89,13 +115,13 @@ class Piece:
 def movement(location1: str, location2: str) -> tuple:
     column1, column2 = letters_numbers[location1[0]], letters_numbers[location2[0]]
     row1, row2 = int(location1[1]), int(location2[1])
-    return column1-column2, row1-row2
+    return column1 - column2, row1 - row2
 
 
 def add_coordinate(initial: str, vector: tuple) -> str:
     x, y = letters_numbers[initial[0]], int(initial[1])
     final_x, final_y = x + vector[0], y + vector[1]
-    return f'{letters_numbers[final_x]}{final_y}'
+    return f"{letters_numbers[final_x]}{final_y}"
 
 
 def return_if_available(suggested_key, dictionary, otherwise):
@@ -107,21 +133,21 @@ def return_if_available(suggested_key, dictionary, otherwise):
 
 def get_king(game_piece_dict, colour):
     for piece in game_piece_dict.values():
-        if piece.piece_type == 'king' and piece.piece_colour == colour:
+        if piece.piece_type == "king" and piece.piece_colour == colour:
             return piece.location
 
 
-def get_attacked_positions(dictionary: dict, attacked_by: str = 'white', skip=''):
+def get_attacked_positions(dictionary: dict, attacked_by: str = "white", skip=""):
     res = set()
     for piece in dictionary.values():
         if piece.location == skip:
             continue
         piece.get_attacks()
         for legal in piece.attack_moves:
-            if attacked_by == 'white':
-                if piece.piece_colour == 'white':
+            if attacked_by == "white":
+                if piece.piece_colour == "white":
                     res.add(legal)
-            elif attacked_by == 'black':
-                if piece.piece_colour == 'black':
+            elif attacked_by == "black":
+                if piece.piece_colour == "black":
                     res.add(legal)
     return res
