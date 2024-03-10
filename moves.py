@@ -1,6 +1,8 @@
 import os
-import winsound
-from winsound import PlaySound
+import platform
+if platform.system() == "Windows":
+    import winsound
+    from winsound import PlaySound
 from tkinter import messagebox
 from abstract_piece import get_king, get_attacked_positions, movement
 from pieces import attempt_promote
@@ -35,9 +37,10 @@ def print_move(piece, location, prom, attacking, old_location, check):
 
 
 def get_sound(sound_number):
-    d = {1: "next_move", 2: "piece_captured", 3: "check"}
-    sound = os.path.dirname(__file__) + f"\\sounds\\{d[sound_number]}.wav"
-    PlaySound(sound, winsound.SND_ASYNC)
+    if platform.system() == "Windows":
+        d = {1: "next_move", 2: "piece_captured", 3: "check"}
+        sound = os.path.dirname(__file__) + f"\\sounds\\{d[sound_number]}.wav"
+        PlaySound(sound, winsound.SND_ASYNC)
 
 
 class MoveMaker:
