@@ -44,35 +44,20 @@ def get_sound(sound_number):
 
 
 class MoveMaker:
-    def __init__(
-        self,
-        moves: list,
-        game_tiles,
-        game_pieces,
-        player,
-        checks,
-        root,
-        move_number,
-        print_move_on,
-    ):
+    def __init__(self, game):
+        self.game = game
         self.first_tile_location = ""
         self.second_tile_location = ""
         self.piece = None
         self.piece_colour = ""
         self.enemy_colour = ""
-        self.moves = moves
-        self.game_tiles = game_tiles
-        self.game_pieces = game_pieces
-        self.player = player
+        self.moves = []
         self.ep = EnPassantMaker()
-        self.checks = checks
-        self.root = root
-        self.move_number = move_number
-        self.print_move_on = print_move_on
+        self.checks = {"white": False, "black": False}
 
     def tile_pressed(self, location):
         self.moves.append(location)
-        current_tile = self.game_tiles[location]
+        current_tile = self.game.tiles[location]
 
         # deselection
         if current_tile.selected:
@@ -87,11 +72,11 @@ class MoveMaker:
     def first_tile_pressed(self, location, current_tile):
         # if a piece of the player's colour is selected
         if (
-            location in self.game_pieces.keys()
-            and self.game_pieces[location].piece_colour == self.player.get()
+            location in self.game.pieces.keys()
+            and self.game.pieces[location].piece_colour == self.game.player.get()
         ):
             self.first_tile_location = location
-            self.piece = self.game_pieces[location]
+            self.piece = self.game.pieces[location]
             self.piece_colour = self.piece.piece_colour
             self.enemy_colour = (
                 Colour[self.piece_colour.upper()].get_opposite().name.lower()
@@ -107,7 +92,7 @@ class MoveMaker:
         self.second_tile_location = location
         conditions = [
             not self.piece.is_move_blocked(location),
-            not current_tile.get_piece_colour() == self.player.get(),
+            not current_tile.get_piece_colour() == self.game.player.get(),
             location in self.piece.legal_moves,
         ]
         if all(conditions):
@@ -115,32 +100,32 @@ class MoveMaker:
         self.reset_all_tiles()
 
     def reset_all_tiles(self):
-        for tile in self.game_tiles.values():
+        for tile in self.game.tiles.values():
             tile.reset()
             self.first_tile_location = self.second_tile_location = ""
 
     def is_current_player_in_check(self):
         defender_colour = Colour[self.enemy_colour.upper()].get_opposite().name.lower()
-        this_players_king_position = get_king(self.game_pieces, defender_colour)
+        this_players_king_position = get_king(self.game.pieces, defender_colour)
         if this_players_king_position in get_attacked_positions(
-            self.game_pieces, self.enemy_colour
+            self.game.pieces, self.enemy_colour
         ):
             get_sound(3)
-            res = self.checks[defender_colour] = self.game_pieces[
+            res = self.checks[defender_colour] = self.game.pieces[
                 this_players_king_position
             ].in_check = True
         else:
-            res = self.checks[defender_colour] = self.game_pieces[
+            res = self.checks[defender_colour] = self.game.pieces[
                 this_players_king_position
             ].in_check = False
         return res
 
     def is_enemy_player_in_check(self):
         player_colour, enemy_colour = self.piece_colour, self.enemy_colour
-        enemy_king_position = get_king(self.game_pieces, enemy_colour)
-        enemy_king = self.game_pieces[enemy_king_position]
+        enemy_king_position = get_king(self.game.pieces, enemy_colour)
+        enemy_king = self.game.pieces[enemy_king_position]
         if enemy_king_position in get_attacked_positions(
-            self.game_pieces, player_colour
+            self.game.pieces, player_colour
         ):
             enemy_king.in_check = True
             self.checks[enemy_colour] = True
@@ -158,21 +143,21 @@ class MoveMaker:
                 r_new = {"g8": "f8", "c8": "d8", "g1": "f1", "c1": "d1"}
                 c1 = r_old[self.second_tile_location]
                 c2 = r_new[self.second_tile_location]
-                self.game_pieces[c1].move(c2)
+                self.game.pieces[c1].move(c2)
 
     def carry_out_move(self):
         l1, l2 = self.first_tile_location, self.second_tile_location
-        attacking = l2 in self.game_pieces.keys()
+        attacking = l2 in self.game.pieces.keys()
         self.piece.move(l2)
         self.complete_castling()
 
-        self.ep.complete_en_passant(l2, self.game_pieces)
+        self.ep.complete_en_passant(l2, self.game.pieces)
         self.ep.set_en_passant(self.piece, l1, l2)
 
-        prom = attempt_promote(self.piece, self.game_pieces, self.game_tiles)
+        prom = attempt_promote(self.piece, self.game.pieces, self.game.tiles)
         check = self.is_enemy_player_in_check()
 
-        if self.print_move_on.get():
+        if self.game.print_move_on:
             print_move(self.piece, l2, prom, attacking, l1, check)
 
         self.check_and_attempt_game_over()
@@ -196,11 +181,11 @@ class MoveMaker:
             else:
                 output_message = "game is a draw"
             messagebox.showinfo("game over", output_message)
-            self.root.destroy()
+            self.game.root.destroy()
 
     def number_of_legal_moves(self):
         legal_moves = 0
-        for piece in self.game_pieces.values():
+        for piece in self.game.pieces.values():
             if piece.piece_colour == self.enemy_colour:
                 if piece.piece_type == "pawn":
                     piece.get_legal_moves(self.ep)
@@ -210,9 +195,9 @@ class MoveMaker:
         return legal_moves
 
     def update_player(self):
-        new_colour = Colour[self.player.get().upper()].get_opposite().name.lower()
-        self.player.set(new_colour)
+        new_colour = Colour[self.game.player.get().upper()].get_opposite().name.lower()
+        self.game.player.set(new_colour)
 
     def update_move_number(self):
-        if self.player.get() == "white":
-            self.move_number.set(self.move_number.get() + 1)
+        if self.game.player.get() == "white":
+            self.game.move_number.set(self.game.move_number.get() + 1)

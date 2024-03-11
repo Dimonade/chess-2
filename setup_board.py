@@ -2,10 +2,10 @@ from constants import Letter, Colour
 from pieces import PieceName
 
 
-def reset_board_pieces(game_pieces: dict, game_tiles: dict, move_number, player):
+def create_pieces(game):
     def add_piece(piece_type, piece_colour, piece_location):
-        game_pieces[piece_location] = piece_type.get_piece_class()(
-            piece_colour.name.lower(), piece_location, game_pieces, game_tiles
+        game.pieces[piece_location] = piece_type.get_piece_class()(
+            piece_colour.name.lower(), piece_location, game.pieces, game.tiles
         )
 
     add_piece(PieceName.ROOK, Colour.WHITE, "a1")
@@ -34,8 +34,8 @@ def reset_board_pieces(game_pieces: dict, game_tiles: dict, move_number, player)
     add_piece(PieceName.KNIGHT, Colour.BLACK, "g8")
     add_piece(PieceName.ROOK, Colour.BLACK, "h8")
 
-    for location in game_pieces.keys():
-        game_tiles[location].set_piece()
+    for location in game.pieces.keys():
+        game.tiles[location].set_piece()
 
-    move_number.set(1)
-    player.set(Colour.WHITE.name.lower())
+    game.move_number.set(1)
+    game.player.set(Colour.WHITE.name.lower())

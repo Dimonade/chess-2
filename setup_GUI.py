@@ -15,7 +15,6 @@ def create_tkinter_window():
     player = tk.StringVar(root, value="white")
     move_number = tk.IntVar(root, value=1)
     chessboard = make_frame(root, 0, 1, (5, 5, 5, 5))
-    print_move_on = tk.BooleanVar(root, value=True)
 
     info_frame = make_frame(root, 0, 2, (10, 10, 10, 10))
     left_labels = make_frame(root, 0, 0)
@@ -46,7 +45,7 @@ def create_tkinter_window():
     )
     draw_button.grid(column=0, row=6)
 
-    return root, chessboard, player, move_number, print_move_on
+    return root, chessboard, player, move_number
 
 
 def make_label(
@@ -77,11 +76,9 @@ def create_main_window(root, left_labels, bottom_labels):
     root.title("Chess")
     root.geometry("600x600")
 
-    # labels to the left of the chessboard
     for j in range(8, 0, -1):
         make_label(left_labels, 8 - j, j, padding=(5, 5, 18, 18))
 
-    # labels to the right of the chessboard
     for j0, j in enumerate(Letter):
         make_label(bottom_labels, 0, j.name.lower(), padding=(20, 20, 0, 0), column=j0)
 

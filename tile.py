@@ -107,15 +107,15 @@ def get_piece_images():
     return res
 
 
-def create_tiles(game_tiles, game_pieces, chessboard_frame, m):
+def create_tiles(game, m):
     for i in range(1, 9):
         for j in Letter:
             letter = j.name.lower()
-            game_tiles[f"{letter}{i}"] = Tile(
+            game.tiles[f"{letter}{i}"] = Tile(
                 i,
                 letter,
-                chessboard=chessboard_frame,
+                chessboard=game.chessboard,
                 images=get_piece_images(),
                 move_maker=m,
-                game_pieces=game_pieces,
+                game_pieces=game.pieces,
             )
