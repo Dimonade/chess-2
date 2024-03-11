@@ -2,6 +2,25 @@ from constants import Letter
 import tkinter as tk
 from PIL import Image, ImageTk
 
+image_names = [
+    "pawn_white",
+    "pawn_black",
+    "bishop_white",
+    "bishop_black",
+    "king_white",
+    "king_black",
+    "empty_tile_1",
+    "empty_tile_2",
+    "knight_white",
+    "knight_black",
+    "rook_white",
+    "rook_black",
+    "queen_white",
+    "queen_black",
+    "empty_tile_1_selected",
+    "empty_tile_2_selected",
+]
+
 
 class Tile:
     def __init__(
@@ -79,25 +98,7 @@ class Tile:
 
 def get_piece_images():
     res = dict()
-    image_list = [
-        "pawn_white",
-        "pawn_black",
-        "bishop_white",
-        "bishop_black",
-        "king_white",
-        "king_black",
-        "empty_tile_1",
-        "empty_tile_2",
-        "knight_white",
-        "knight_black",
-        "rook_white",
-        "rook_black",
-        "queen_white",
-        "queen_black",
-        "empty_tile_1_selected",
-        "empty_tile_2_selected",
-    ]
-    for i in image_list:
+    for i in image_names:
         res[i] = ImageTk.PhotoImage(
             Image.open(f"piece_images/{i}.png").resize(
                 (50, 50), Image.Resampling.LANCZOS

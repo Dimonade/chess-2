@@ -14,11 +14,11 @@ class EnPassantMaker:
             elif piece.piece_colour == "black":
                 self.tile = add_coordinate(old_location, (0, -1))
 
-    def complete_en_passant(self, location, piece_dictionary):
+    def complete_en_passant(self, location, pieces: dict):
         if self.tile == location:
             t = ""
             if location[1] == "6":
                 t = add_coordinate(location, (0, -1))
             elif location[1] == "3":
                 t = add_coordinate(location, (0, 1))
-            del piece_dictionary[t]
+            del pieces[t]

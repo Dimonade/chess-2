@@ -8,6 +8,7 @@ from tkinter import messagebox
 from abstract_piece import get_king, get_attacked_positions, movement
 from constants import Colour
 from pieces import attempt_promote
+from en_passant import EnPassantMaker
 
 
 def print_move(piece, location, prom, attacking, old_location, check):
@@ -45,11 +46,10 @@ def get_sound(sound_number):
 class MoveMaker:
     def __init__(
         self,
-        move_list,
+        moves: list,
         game_tiles,
         game_pieces,
         player,
-        ep,
         checks,
         root,
         move_number,
@@ -60,18 +60,18 @@ class MoveMaker:
         self.piece = None
         self.piece_colour = ""
         self.enemy_colour = ""
-        self.move_list = move_list
+        self.moves = moves
         self.game_tiles = game_tiles
         self.game_pieces = game_pieces
         self.player = player
-        self.ep = ep
+        self.ep = EnPassantMaker()
         self.checks = checks
         self.root = root
         self.move_number = move_number
         self.print_move_on = print_move_on
 
     def tile_pressed(self, location):
-        self.move_list.append(location)
+        self.moves.append(location)
         current_tile = self.game_tiles[location]
 
         # deselection
@@ -96,14 +96,17 @@ class MoveMaker:
             self.enemy_colour = (
                 Colour[self.piece_colour.upper()].get_opposite().name.lower()
             )
-            self.piece.get_legal_moves()
+            if self.piece.piece_type == "pawn":
+                self.piece.get_legal_moves(self.ep)
+            else:
+                self.piece.get_legal_moves()
             current_tile.selected = True
             current_tile.button.configure(bg="magenta")
 
     def second_tile_pressed(self, location, current_tile):
         self.second_tile_location = location
         conditions = [
-            not self.piece.move_blocked(location),
+            not self.piece.is_move_blocked(location),
             not current_tile.get_piece_colour() == self.player.get(),
             location in self.piece.legal_moves,
         ]
@@ -116,7 +119,7 @@ class MoveMaker:
             tile.reset()
             self.first_tile_location = self.second_tile_location = ""
 
-    def current_player_check(self):
+    def is_current_player_in_check(self):
         defender_colour = Colour[self.enemy_colour.upper()].get_opposite().name.lower()
         this_players_king_position = get_king(self.game_pieces, defender_colour)
         if this_players_king_position in get_attacked_positions(
@@ -132,7 +135,7 @@ class MoveMaker:
             ].in_check = False
         return res
 
-    def enemy_player_check(self):
+    def is_enemy_player_in_check(self):
         player_colour, enemy_colour = self.piece_colour, self.enemy_colour
         enemy_king_position = get_king(self.game_pieces, enemy_colour)
         enemy_king = self.game_pieces[enemy_king_position]
@@ -166,8 +169,8 @@ class MoveMaker:
         self.ep.complete_en_passant(l2, self.game_pieces)
         self.ep.set_en_passant(self.piece, l1, l2)
 
-        prom = attempt_promote(self.piece, self.game_pieces, self.game_tiles, self.ep)
-        check = self.enemy_player_check()
+        prom = attempt_promote(self.piece, self.game_pieces, self.game_tiles)
+        check = self.is_enemy_player_in_check()
 
         if self.print_move_on.get():
             print_move(self.piece, l2, prom, attacking, l1, check)
@@ -199,7 +202,10 @@ class MoveMaker:
         legal_moves = 0
         for piece in self.game_pieces.values():
             if piece.piece_colour == self.enemy_colour:
-                piece.get_legal_moves()
+                if piece.piece_type == "pawn":
+                    piece.get_legal_moves(self.ep)
+                else:
+                    piece.get_legal_moves()
                 legal_moves += len(piece.legal_moves)
         return legal_moves
 

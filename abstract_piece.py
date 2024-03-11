@@ -2,12 +2,9 @@ from constants import Colour, Letter
 
 
 class Piece:
-    def __init__(
-        self, colour, piece_type, location, game_pieces, game_tiles, en_passant_manager
-    ):
+    def __init__(self, colour, piece_type, location, game_pieces, game_tiles):
         self.game_pieces = game_pieces
         self.game_tiles = game_tiles
-        self.en_passant_manager = en_passant_manager
         self.piece_colour = colour
         self.piece_type = piece_type
         self.location = location
@@ -30,7 +27,6 @@ class Piece:
 
     def remove(self):
         del self.game_pieces[self.location]
-        self.location = None
 
     def find_vector(self):
         s1, s2 = self.location, self.new_location
@@ -39,22 +35,16 @@ class Piece:
         return v1, v2
 
     def find_direction(self):
+        def sign(x):
+            return -1 if x < 0 else (1 if x > 0 else 0)
+
         v1, v2 = self.find_vector()
         if 0 in (v1, v2) or abs(v1) == abs(v2):
-            return self.sign(v1), self.sign(v2)
+            return sign(v1), sign(v2)
         else:
             return "invalid"
 
-    @staticmethod
-    def sign(x):
-        if x > 0:
-            return 1
-        elif x < 0:
-            return -1
-        else:
-            return 0
-
-    def move_blocked(self, new_location):
+    def is_move_blocked(self, new_location):
         self.new_location = new_location
         if self.piece_type == "knight":
             return False
@@ -68,14 +58,14 @@ class Piece:
                     location = add_coordinate(location, direction)
                 return False
 
-    def attack_valid(self, m1, m2, location):
+    def is_attack_valid(self, m1, m2, location):
         pass
 
     def get_attacks(self):
         self.attack_moves.clear()
         for location in self.game_tiles.keys():
             m1, m2 = movement(location, self.location)
-            if self.attack_valid(m1, m2, location):
+            if self.is_attack_valid(m1, m2, location):
                 self.attack_moves.add(location)
         if self.location in self.attack_moves:
             self.attack_moves.remove(self.location)
@@ -96,22 +86,15 @@ def add_coordinate(initial: str, vector: tuple) -> str:
     return f"{Letter(final_x).name.lower()}{final_y}"
 
 
-def return_if_available(suggested_key, dictionary, otherwise):
-    if suggested_key in dictionary.keys():
-        return dictionary[suggested_key]
-    else:
-        return otherwise
-
-
-def get_king(game_piece_dict, colour):
-    for piece in game_piece_dict.values():
+def get_king(game_pieces: dict, colour) -> str:
+    for piece in game_pieces.values():
         if piece.piece_type == "king" and piece.piece_colour == colour:
             return piece.location
 
 
-def get_attacked_positions(dictionary: dict, attacked_by: str = "white", skip=""):
+def get_attacked_positions(pieces: dict, attacked_by: str = "white", skip="") -> set:
     res = set()
-    for piece in dictionary.values():
+    for piece in pieces.values():
         if piece.location == skip:
             continue
         piece.get_attacks()
