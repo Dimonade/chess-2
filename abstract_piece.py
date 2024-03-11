@@ -1,22 +1,4 @@
-letters_numbers = {
-    1: "a",
-    2: "b",
-    3: "c",
-    4: "d",
-    5: "e",
-    6: "f",
-    7: "g",
-    8: "h",
-    "a": 1,
-    "b": 2,
-    "c": 3,
-    "d": 4,
-    "e": 5,
-    "f": 6,
-    "g": 7,
-    "h": 8,
-}
-opposite_colour = {"black": "white", "white": "black"}
+from constants import Colour, Letter
 
 
 class Piece:
@@ -32,7 +14,7 @@ class Piece:
         self.piece_unmoved = True
         self.active = True
         self.new_location = ""
-        self.enemy_colour = opposite_colour[colour]
+        self.enemy_colour = Colour[colour.upper()].get_opposite().name.lower()
         self.enemy_king_location = get_king(game_pieces, self.enemy_colour)
         self.legal_moves = set()
         self.attack_moves = set()
@@ -50,22 +32,9 @@ class Piece:
         del self.game_pieces[self.location]
         self.location = None
 
-    def value_estimate(self):
-        piece_values = {
-            "None": 0,
-            "rook": 5,
-            "knight": 3,
-            "bishop": 3,
-            "queen": 9,
-            "king": 0,
-            "pawn": 1,
-        }
-        d = {"white": 1, "black": -1, "None": 0}
-        return piece_values[self.piece_type] * d[self.piece_colour]
-
     def find_vector(self):
         s1, s2 = self.location, self.new_location
-        v1 = letters_numbers[s2[0]] - letters_numbers[s1[0]]
+        v1 = Letter[s2[0].upper()].value - Letter[s1[0].upper()].value
         v2 = int(s2[1]) - int(s1[1])
         return v1, v2
 
@@ -113,15 +82,18 @@ class Piece:
 
 
 def movement(location1: str, location2: str) -> tuple:
-    column1, column2 = letters_numbers[location1[0]], letters_numbers[location2[0]]
+    column1, column2 = (
+        Letter[location1[0].upper()].value,
+        Letter[location2[0].upper()].value,
+    )
     row1, row2 = int(location1[1]), int(location2[1])
     return column1 - column2, row1 - row2
 
 
 def add_coordinate(initial: str, vector: tuple) -> str:
-    x, y = letters_numbers[initial[0]], int(initial[1])
+    x, y = Letter[initial[0].upper()].value, int(initial[1])
     final_x, final_y = x + vector[0], y + vector[1]
-    return f"{letters_numbers[final_x]}{final_y}"
+    return f"{Letter(final_x).name.lower()}{final_y}"
 
 
 def return_if_available(suggested_key, dictionary, otherwise):

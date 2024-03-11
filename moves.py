@@ -1,14 +1,13 @@
 import os
 import platform
+
 if platform.system() == "Windows":
     import winsound
     from winsound import PlaySound
 from tkinter import messagebox
 from abstract_piece import get_king, get_attacked_positions, movement
+from constants import Colour
 from pieces import attempt_promote
-
-
-opposite_colour = {"black": "white", "white": "black"}
 
 
 def print_move(piece, location, prom, attacking, old_location, check):
@@ -94,7 +93,9 @@ class MoveMaker:
             self.first_tile_location = location
             self.piece = self.game_pieces[location]
             self.piece_colour = self.piece.piece_colour
-            self.enemy_colour = opposite_colour[self.piece_colour]
+            self.enemy_colour = (
+                Colour[self.piece_colour.upper()].get_opposite().name.lower()
+            )
             self.piece.get_legal_moves()
             current_tile.selected = True
             current_tile.button.configure(bg="magenta")
@@ -116,7 +117,7 @@ class MoveMaker:
             self.first_tile_location = self.second_tile_location = ""
 
     def current_player_check(self):
-        defender_colour = opposite_colour[self.enemy_colour]
+        defender_colour = Colour[self.enemy_colour.upper()].get_opposite().name.lower()
         this_players_king_position = get_king(self.game_pieces, defender_colour)
         if this_players_king_position in get_attacked_positions(
             self.game_pieces, self.enemy_colour
@@ -203,7 +204,7 @@ class MoveMaker:
         return legal_moves
 
     def update_player(self):
-        new_colour = opposite_colour[self.player.get()]
+        new_colour = Colour[self.player.get().upper()].get_opposite().name.lower()
         self.player.set(new_colour)
 
     def update_move_number(self):

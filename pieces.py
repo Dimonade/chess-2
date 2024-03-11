@@ -1,26 +1,27 @@
 import tkinter as tk
 from abstract_piece import Piece, movement, get_attacked_positions
+from constants import Colour
+from enum import Enum
 
-letters_numbers = {
-    1: "a",
-    2: "b",
-    3: "c",
-    4: "d",
-    5: "e",
-    6: "f",
-    7: "g",
-    8: "h",
-    "a": 1,
-    "b": 2,
-    "c": 3,
-    "d": 4,
-    "e": 5,
-    "f": 6,
-    "g": 7,
-    "h": 8,
-}
-opposite_colour = {"black": "white", "white": "black"}
-eight_letters = ["a", "b", "c", "d", "e", "f", "g", "h"]
+
+class PieceName(Enum):
+    PAWN = 1
+    ROOK = 2
+    KNIGHT = 3
+    BISHOP = 4
+    QUEEN = 5
+    KING = 6
+
+    def get_abbreviation(self):
+        if self.name == "PAWN":
+            return ""
+        elif self.name == "KNIGHT":
+            return "N"
+        else:
+            return self.name[0]
+
+    def get_piece_class(self):
+        return [Pawn, Rook, Knight, Bishop, Queen, King][self.value - 1]
 
 
 class Pawn(Piece):
@@ -185,7 +186,7 @@ class King(Piece):
 
     def get_legal_moves(self):
         self.legal_moves.clear()
-        o = opposite_colour[self.piece_colour]
+        o = Colour[self.piece_colour.upper()].get_opposite().name.lower()
         ap = get_attacked_positions(self.game_pieces, attacked_by=o)
         for location in self.game_tiles.keys():
             # not filled with same colour

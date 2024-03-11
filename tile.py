@@ -1,26 +1,6 @@
+from constants import Letter
 import tkinter as tk
 from PIL import Image, ImageTk
-
-letters_numbers = {
-    1: "a",
-    2: "b",
-    3: "c",
-    4: "d",
-    5: "e",
-    6: "f",
-    7: "g",
-    8: "h",
-    "a": 1,
-    "b": 2,
-    "c": 3,
-    "d": 4,
-    "e": 5,
-    "f": 6,
-    "g": 7,
-    "h": 8,
-}
-
-eight_letters = ["a", "b", "c", "d", "e", "f", "g", "h"]
 
 
 class Tile:
@@ -32,7 +12,7 @@ class Tile:
         self.game_pieces = game_pieces
         self.location = f"{column}{row}"
         d = {0: "gray", 1: "wheat1"}
-        self.base_colour = d[(row + letters_numbers[column]) % 2]
+        self.base_colour = d[(row + Letter[column.upper()].value) % 2]
         d = {"gray": "empty_tile_1", "wheat1": "empty_tile_2"}
         self.base_image = images[d[self.base_colour]]
         self.button = tk.Button(
@@ -45,7 +25,7 @@ class Tile:
             image=self.base_image,
             command=lambda: move_maker.tile_pressed(self.location),
         )
-        self.button.grid(row=8 - row, column=letters_numbers[column])
+        self.button.grid(row=8 - row, column=Letter[column.upper()].value)
         self.button.bind("<Button-3>", lambda event: self.configure_selection())
 
         self.selected = False
@@ -128,10 +108,11 @@ def get_piece_images():
 
 def create_tiles(game_tiles, game_pieces, chessboard_frame, m):
     for i in range(1, 9):
-        for j in eight_letters:
-            game_tiles[f"{j}{i}"] = Tile(
+        for j in Letter:
+            letter = j.name.lower()
+            game_tiles[f"{letter}{i}"] = Tile(
                 i,
-                j,
+                letter,
                 chessboard=chessboard_frame,
                 images=get_piece_images(),
                 move_maker=m,

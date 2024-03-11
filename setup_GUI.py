@@ -1,8 +1,6 @@
+from constants import Letter
 import tkinter as tk
 from tkinter import messagebox
-
-
-eight_letters = ["a", "b", "c", "d", "e", "f", "g", "h"]
 
 
 def sequence(move_list):
@@ -84,8 +82,8 @@ def create_main_window(root, left_labels, bottom_labels):
         make_label(left_labels, 8 - j, j, padding=(5, 5, 18, 18))
 
     # labels to the right of the chessboard
-    for j0, j in enumerate(eight_letters):
-        make_label(bottom_labels, 0, j, padding=(20, 20, 0, 0), column=j0)
+    for j0, j in enumerate(Letter):
+        make_label(bottom_labels, 0, j.name.lower(), padding=(20, 20, 0, 0), column=j0)
 
 
 def request_draw(frame, player_colour):
