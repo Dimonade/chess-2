@@ -6,10 +6,10 @@ from tile import create_tiles
 
 
 if __name__ == "__main__":
-    gui_components = create_tkinter_window()
-    game = Game(gui_components)
-    m = MoveMaker(game)
-    create_tiles(game, m)
-    create_pieces(game)
+    gui_components = create_tkinter_window()  # creates the tkinter gui application
+    game = Game(gui_components)  # creates the game
+    m = MoveMaker(game)  # creates a move maker to manage game moves
+    create_tiles(game, m)  # creates all the tiles and adds them to game
+    create_pieces(game)  # creates all the pieces and adds them to the game
 
     game.root.mainloop()

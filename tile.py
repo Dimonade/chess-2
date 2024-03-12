@@ -23,19 +23,16 @@ image_names = [
 
 
 class Tile:
-    def __init__(
-        self, row: int, column: str, chessboard, images, move_maker, game_pieces
-    ):
-        self.chessboard = chessboard
+    def __init__(self, row: int, column: str, game, images, move_maker):
+        self.game = game
         self.images = images
-        self.game_pieces = game_pieces
         self.location = f"{column}{row}"
         d = {0: "gray", 1: "wheat1"}
         self.base_colour = d[(row + Letter[column.upper()].value) % 2]
         d = {"gray": "empty_tile_1", "wheat1": "empty_tile_2"}
         self.base_image = images[d[self.base_colour]]
         self.button = tk.Button(
-            self.chessboard,
+            self.game.chessboard,
             width=50,
             height=50,
             bg=self.base_colour,
@@ -51,16 +48,13 @@ class Tile:
         self.highlighted = False
 
     def set_piece(self):
-        if self.location in self.game_pieces.keys():
-            piece = self.game_pieces[self.location]
-            t = piece.piece_type
-            c = piece.piece_colour
-            button_image = self.images[f"{t}_{c}"]
+        if self.location in self.game.pieces.keys():
+            piece = self.game.pieces[self.location]
+            button_image = self.images[f"{piece.piece_type}_{piece.piece_colour}"]
         else:
             button_image = self.base_image
-        self.button.configure(
-            bg=self.base_colour, activebackground=self.base_colour, image=button_image
-        )
+        self.set_bg(self.base_colour)
+        self.set_img(button_image)
 
     def configure_selection(self):
         self.highlighted = not self.highlighted
@@ -68,30 +62,36 @@ class Tile:
             "wheat1": ("PaleTurquoise1", "empty_tile_2_selected"),
             "gray": ("PaleTurquoise3", "empty_tile_1_selected"),
         }
-        piece_present = self.location in self.game_pieces.keys()
+        piece_present = self.location in self.game.pieces.keys()
         if self.highlighted:
-            self.button.configure(
-                bg=d[self.base_colour][0], activebackground=d[self.base_colour][0]
-            )
+            self.set_bg(d[self.base_colour][0])
             if not piece_present:
-                self.button.configure(image=self.images[d[self.base_colour][1]])
+                self.set_img(self.images[d[self.base_colour][1]])
         else:
-            self.button.configure(
-                bg=self.base_colour, activebackground=self.base_colour
-            )
+            self.set_bg(self.base_colour)
             if not piece_present:
-                self.button.configure(image=self.base_image)
+                self.set_img(self.base_image)
+
+    def set_bg(self, bg):
+        self.button.configure(bg=bg, activebackground=bg)
+
+    def set_img(self, image):
+        self.button.configure(image=image)
 
     def reset(self):
         self.selected = False
         self.highlighted = False
-        self.button.configure(bg=self.base_colour)
+        self.set_bg(self.base_colour)
         self.set_piece()
 
+    def select_as_first_tile(self):
+        self.selected = True
+        self.set_bg("magenta")
+
     def get_piece_colour(self):
-        piece_exists = self.location in self.game_pieces.keys()
+        piece_exists = self.location in self.game.pieces.keys()
         if piece_exists:
-            return self.game_pieces[self.location].piece_colour
+            return self.game.pieces[self.location].piece_colour
         else:
             return "piece does not exist"
 
@@ -112,10 +112,5 @@ def create_tiles(game, m):
         for j in Letter:
             letter = j.name.lower()
             game.tiles[f"{letter}{i}"] = Tile(
-                i,
-                letter,
-                chessboard=game.chessboard,
-                images=get_piece_images(),
-                move_maker=m,
-                game_pieces=game.pieces,
+                i, letter, game=game, images=get_piece_images(), move_maker=m
             )

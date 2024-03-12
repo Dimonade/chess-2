@@ -1,14 +1,127 @@
-import os
-import platform
-
-if platform.system() == "Windows":
-    import winsound
-    from winsound import PlaySound
-from tkinter import messagebox
-from abstract_piece import get_king, get_attacked_positions, movement
-from constants import Colour
+from audio import get_sound
+from abstract_piece import movement
 from pieces import attempt_promote
+from selection import Selection
 from en_passant import EnPassantMaker
+
+
+class MoveMaker:
+    def __init__(self, game):
+        self.game = game
+        self.selection = Selection()
+        self.ep = EnPassantMaker()
+        self.location = ""
+
+    def tile_pressed(self, location):
+        self.location = location
+        selection = self.selection
+        selection.current_tile = self.game.tiles[location]
+        if self.is_deselection():
+            self.reset()
+        else:
+            if selection.first_tile == "":
+                self.first_tile_pressed()
+            else:
+                self.second_tile_pressed()
+
+    def first_tile_pressed(self):
+        location = self.location
+        selection = self.selection
+        pieces = self.game.pieces
+
+        if self.is_piece_player_colour():
+            selection.set_first_tile(location, pieces[location])
+            piece = selection.piece
+
+            if piece.piece_type == "pawn":
+                piece.get_legal_moves(self.ep)
+            else:
+                piece.get_legal_moves()
+
+    def second_tile_pressed(self):
+        self.selection.second_tile = self.location
+        if self.is_legal_destination():
+            self.carry_out_move()
+        self.reset()
+
+    def is_deselection(self):
+        return self.selection.current_tile.selected
+
+    def is_piece_player_colour(self) -> bool:
+        pieces = self.game.pieces
+        location = self.location
+        player_colour = self.game.player.get()
+        if location in pieces.keys():
+            return pieces[location].piece_colour == player_colour
+        return False
+
+    def is_legal_destination(self):
+        selection = self.selection
+        piece = selection.piece
+        location = selection.second_tile
+        conditions = [
+            not piece.is_move_blocked(location),
+            not selection.current_tile.get_piece_colour() == self.game.player.get(),
+            location in piece.legal_moves,
+        ]
+        return all(conditions)
+
+    def reset(self):
+        self.selection.reset()
+        self.game.reset_all_tiles()
+
+    def complete_castling(self):
+        """Check piece is king, if so check movement is 2 horizontal tiles, if so move corresponding rook"""
+        selection = self.selection
+        if selection.piece.piece_type == "king":
+            king_start, king_end = selection.get_tiles()
+            horizontal_movement, _ = movement(king_start, king_end)
+            if abs(horizontal_movement) == 2:
+                rook_start = {"g8": "h8", "c8": "a8", "g1": "h1", "c1": "a1"}
+                rook_end = {"g8": "f8", "c8": "d8", "g1": "f1", "c1": "d1"}
+                rook_start_tile = rook_start[king_end]
+                rook_end_tile = rook_end[king_end]
+                self.game.pieces[rook_start_tile].move(rook_end_tile)
+
+    def carry_out_move(self):
+        tile1, tile2 = self.selection.get_tiles()
+        attacking = tile2 in self.game.pieces.keys()
+        self.selection.piece.move(tile2)
+        self.complete_castling()
+
+        self.ep.complete_en_passant(tile2, self.game.pieces)
+        self.ep.set_en_passant(self.selection.piece, tile1, tile2)
+
+        prom = attempt_promote(self.selection.piece, self.game.pieces, self.game.tiles)
+
+        check = False
+
+        if self.game.print_move_on:
+            print_move(self.selection.piece, tile2, prom, attacking, tile1, check)
+
+        self.make_sound(check, attacking)
+        self.game.next_player()
+        self.game.update_move_number()
+
+    @staticmethod
+    def make_sound(check, attacking):
+        if check:
+            get_sound(3)
+        elif attacking:
+            get_sound(2)
+        else:
+            get_sound(1)
+
+    def number_of_legal_moves(self):
+        legal_moves = 0
+        for piece in self.game.pieces.values():
+            if piece.piece_colour == self.selection.enemy_colour:
+                if piece.piece_type == "pawn":
+                    piece.get_legal_moves(self.ep)
+                else:
+                    piece.get_legal_moves()
+                legal_moves += len(piece.legal_moves)
+        return legal_moves
 
 
 def print_move(piece, location, prom, attacking, old_location, check):
@@ -34,170 +147,3 @@ def print_move(piece, location, prom, attacking, old_location, check):
     d2 = {False: "", True: "+", "checkmate": "#"}
     output_string = f"{d[piece.piece_type]}{at}{location}{promotion}{d2[check]}"
     print(output_string)
-
-
-def get_sound(sound_number):
-    if platform.system() == "Windows":
-        d = {1: "next_move", 2: "piece_captured", 3: "check"}
-        sound = os.path.dirname(__file__) + f"\\sounds\\{d[sound_number]}.wav"
-        PlaySound(sound, winsound.SND_ASYNC)
-
-
-class MoveMaker:
-    def __init__(self, game):
-        self.game = game
-        self.first_tile_location = ""
-        self.second_tile_location = ""
-        self.piece = None
-        self.piece_colour = ""
-        self.enemy_colour = ""
-        self.moves = []
-        self.ep = EnPassantMaker()
-        self.checks = {"white": False, "black": False}
-
-    def tile_pressed(self, location):
-        self.moves.append(location)
-        current_tile = self.game.tiles[location]
-
-        # deselection
-        if current_tile.selected:
-            self.reset_all_tiles()
-
-        else:
-            if self.first_tile_location == "":
-                self.first_tile_pressed(location, current_tile)
-            else:
-                self.second_tile_pressed(location, current_tile)
-
-    def first_tile_pressed(self, location, current_tile):
-        # if a piece of the player's colour is selected
-        if (
-            location in self.game.pieces.keys()
-            and self.game.pieces[location].piece_colour == self.game.player.get()
-        ):
-            self.first_tile_location = location
-            self.piece = self.game.pieces[location]
-            self.piece_colour = self.piece.piece_colour
-            self.enemy_colour = (
-                Colour[self.piece_colour.upper()].get_opposite().name.lower()
-            )
-            if self.piece.piece_type == "pawn":
-                self.piece.get_legal_moves(self.ep)
-            else:
-                self.piece.get_legal_moves()
-            current_tile.selected = True
-            current_tile.button.configure(bg="magenta")
-
-    def second_tile_pressed(self, location, current_tile):
-        self.second_tile_location = location
-        conditions = [
-            not self.piece.is_move_blocked(location),
-            not current_tile.get_piece_colour() == self.game.player.get(),
-            location in self.piece.legal_moves,
-        ]
-        if all(conditions):
-            self.carry_out_move()
-        self.reset_all_tiles()
-
-    def reset_all_tiles(self):
-        for tile in self.game.tiles.values():
-            tile.reset()
-            self.first_tile_location = self.second_tile_location = ""
-
-    def is_current_player_in_check(self):
-        defender_colour = Colour[self.enemy_colour.upper()].get_opposite().name.lower()
-        this_players_king_position = get_king(self.game.pieces, defender_colour)
-        if this_players_king_position in get_attacked_positions(
-            self.game.pieces, self.enemy_colour
-        ):
-            get_sound(3)
-            res = self.checks[defender_colour] = self.game.pieces[
-                this_players_king_position
-            ].in_check = True
-        else:
-            res = self.checks[defender_colour] = self.game.pieces[
-                this_players_king_position
-            ].in_check = False
-        return res
-
-    def is_enemy_player_in_check(self):
-        player_colour, enemy_colour = self.piece_colour, self.enemy_colour
-        enemy_king_position = get_king(self.game.pieces, enemy_colour)
-        enemy_king = self.game.pieces[enemy_king_position]
-        if enemy_king_position in get_attacked_positions(
-            self.game.pieces, player_colour
-        ):
-            enemy_king.in_check = True
-            self.checks[enemy_colour] = True
-            return True
-        else:
-            enemy_king.in_check = False
-            self.checks[enemy_colour] = False
-            return False
-
-    def complete_castling(self):
-        if self.piece.piece_type == "king":
-            m1, m2 = movement(self.first_tile_location, self.second_tile_location)
-            if abs(m1) == 2:
-                r_old = {"g8": "h8", "c8": "a8", "g1": "h1", "c1": "a1"}
-                r_new = {"g8": "f8", "c8": "d8", "g1": "f1", "c1": "d1"}
-                c1 = r_old[self.second_tile_location]
-                c2 = r_new[self.second_tile_location]
-                self.game.pieces[c1].move(c2)
-
-    def carry_out_move(self):
-        l1, l2 = self.first_tile_location, self.second_tile_location
-        attacking = l2 in self.game.pieces.keys()
-        self.piece.move(l2)
-        self.complete_castling()
-
-        self.ep.complete_en_passant(l2, self.game.pieces)
-        self.ep.set_en_passant(self.piece, l1, l2)
-
-        prom = attempt_promote(self.piece, self.game.pieces, self.game.tiles)
-        check = self.is_enemy_player_in_check()
-
-        if self.game.print_move_on:
-            print_move(self.piece, l2, prom, attacking, l1, check)
-
-        self.check_and_attempt_game_over()
-        self.make_sound(check, attacking)
-        self.update_player()
-        self.update_move_number()
-
-    @staticmethod
-    def make_sound(check, attacking):
-        if check:
-            get_sound(3)
-        elif attacking:
-            get_sound(2)
-        else:
-            get_sound(1)
-
-    def check_and_attempt_game_over(self):
-        if self.number_of_legal_moves() == 0:
-            if self.checks[self.enemy_colour]:
-                output_message = f"{self.piece_colour} wins"
-            else:
-                output_message = "game is a draw"
-            messagebox.showinfo("game over", output_message)
-            self.game.root.destroy()
-
-    def number_of_legal_moves(self):
-        legal_moves = 0
-        for piece in self.game.pieces.values():
-            if piece.piece_colour == self.enemy_colour:
-                if piece.piece_type == "pawn":
-                    piece.get_legal_moves(self.ep)
-                else:
-                    piece.get_legal_moves()
-                legal_moves += len(piece.legal_moves)
-        return legal_moves
-
-    def update_player(self):
-        new_colour = Colour[self.game.player.get().upper()].get_opposite().name.lower()
-        self.game.player.set(new_colour)
-
-    def update_move_number(self):
-        if self.game.player.get() == "white":
-            self.game.move_number.set(self.game.move_number.get() + 1)
