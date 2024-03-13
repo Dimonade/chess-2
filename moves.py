@@ -1,4 +1,4 @@
-from audio import get_sound
+from audio import make_sound
 from abstract_piece import movement
 from pieces import attempt_promote
 from selection import Selection
@@ -14,15 +14,14 @@ class MoveMaker:
 
     def tile_pressed(self, location):
         self.location = location
-        selection = self.selection
-        selection.current_tile = self.game.tiles[location]
+
+        self.selection.current_tile = self.game.tiles[location]
         if self.is_deselection():
             self.reset()
+        elif self.selection.first_tile == "":
+            self.first_tile_pressed()
         else:
-            if selection.first_tile == "":
-                self.first_tile_pressed()
-            else:
-                self.second_tile_pressed()
+            self.second_tile_pressed()
 
     def first_tile_pressed(self):
         location = self.location
@@ -56,12 +55,13 @@ class MoveMaker:
         return False
 
     def is_legal_destination(self):
+        """return True if move not blocked, current piece colour is not player colour and location in legal moves"""
         selection = self.selection
         piece = selection.piece
         location = selection.second_tile
         conditions = [
             not piece.is_move_blocked(location),
-            not selection.current_tile.get_piece_colour() == self.game.player.get(),
+            not self.get_piece_colour() == self.game.player.get(),
             location in piece.legal_moves,
         ]
         return all(conditions)
@@ -84,33 +84,26 @@ class MoveMaker:
                 self.game.pieces[rook_start_tile].move(rook_end_tile)
 
     def carry_out_move(self):
-        tile1, tile2 = self.selection.get_tiles()
-        attacking = tile2 in self.game.pieces.keys()
-        self.selection.piece.move(tile2)
+        selection = self.selection
+        game = self.game
+        pieces = game.pieces
+        piece = selection.piece
+
+        tile1, tile2 = selection.get_tiles()
+        is_attacking = (
+            tile2 in pieces.keys()
+        )  # don't move below piece.move as will cause error
+        piece.move(tile2)
+
         self.complete_castling()
-
-        self.ep.complete_en_passant(tile2, self.game.pieces)
-        self.ep.set_en_passant(self.selection.piece, tile1, tile2)
-
-        prom = attempt_promote(self.selection.piece, self.game.pieces, self.game.tiles)
-
+        self.ep.complete_en_passant(tile2, pieces)
+        self.ep.set_en_passant(piece, tile1, tile2)
+        prom = attempt_promote(piece, pieces, game.tiles)
         check = False
-
-        if self.game.print_move_on:
-            print_move(self.selection.piece, tile2, prom, attacking, tile1, check)
-
-        self.make_sound(check, attacking)
-        self.game.next_player()
-        self.game.update_move_number()
-
-    @staticmethod
-    def make_sound(check, attacking):
-        if check:
-            get_sound(3)
-        elif attacking:
-            get_sound(2)
-        else:
-            get_sound(1)
+        if game.print_move_on:
+            print_move(piece, tile2, prom, is_attacking, tile1, check)
+        make_sound(check, is_attacking)
+        game.next_turn()
 
     def number_of_legal_moves(self):
         legal_moves = 0
@@ -122,6 +115,14 @@ class MoveMaker:
                     piece.get_legal_moves()
                 legal_moves += len(piece.legal_moves)
         return legal_moves
+
+    def get_piece_colour(self):
+        location = self.location
+        pieces = self.game.pieces
+        if location in pieces.keys():
+            return pieces[location].piece_colour
+        else:
+            return "piece does not exist"
 
 
 def print_move(piece, location, prom, attacking, old_location, check):

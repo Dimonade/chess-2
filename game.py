@@ -12,12 +12,18 @@ class Game:
         self.player = gui_components[2]
         self.move_number = gui_components[3]
 
+        self.move_maker = None
+
         self.white_in_check = False
         self.black_in_check = False
 
     def reset_all_tiles(self):
         for tile in self.tiles.values():
             tile.reset()
+
+    def next_turn(self):
+        self.update_move_number()
+        self.next_player()
 
     def update_move_number(self):
         if self.player.get() == "white":
