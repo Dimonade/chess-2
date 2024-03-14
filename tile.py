@@ -37,7 +37,7 @@ class Tile:
 
         if location in pieces.keys():
             piece = pieces[location]
-            image_name = f"{piece.piece_type}_{piece.piece_colour}"
+            image_name = f"{piece.type}_{piece.colour}"
             button_image = self.images[image_name]
         else:
             button_image = self.base_image

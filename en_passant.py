@@ -8,11 +8,12 @@ class EnPassantMaker:
     def set_en_passant(self, piece, old_location, new_location):
         m1, m2 = movement(old_location, new_location)
         self.tile = ""
-        if piece.piece_type == "pawn" and m1 == 0 and abs(m2) == 2:
-            if piece.piece_colour == "white":
-                self.tile = add_coordinate(old_location, (0, 1))
-            elif piece.piece_colour == "black":
-                self.tile = add_coordinate(old_location, (0, -1))
+        if piece.type == "pawn" and m1 == 0 and abs(m2) == 2:
+            if piece.colour == "white":
+                vector = (0, 1)
+            else:
+                vector = (0, -1)
+            self.tile = add_coordinate(old_location, vector)
 
     def complete_en_passant(self, location, pieces: dict):
         if self.tile == location:

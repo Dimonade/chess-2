@@ -20,8 +20,6 @@ class Selection:
     def set_first_tile(self, first_tile, piece):
         self.first_tile = first_tile
         self.piece = piece
-        self.piece_colour = piece.piece_colour
-        self.enemy_colour = (
-            Colour[piece.piece_colour.upper()].get_opposite().name.lower()
-        )
+        self.piece_colour = piece.colour
+        self.enemy_colour = Colour.get_opposite(piece.colour)
         self.current_tile.select_as_first_tile()

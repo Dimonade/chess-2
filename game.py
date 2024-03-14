@@ -1,4 +1,4 @@
-from constants import Colour
+from constants import Colour, Letter
 
 
 class Game:
@@ -27,8 +27,9 @@ class Game:
 
     def update_move_number(self):
         if self.player.get() == "white":
-            self.move_number.set(self.move_number.get() + 1)
+            mn = self.move_number
+            mn.set(mn.get() + 1)
 
     def next_player(self):
-        new_colour = Colour[self.player.get().upper()].get_opposite().name.lower()
-        self.player.set(new_colour)
+        p = self.player
+        p.set(Colour.get_opposite(p.get()))
