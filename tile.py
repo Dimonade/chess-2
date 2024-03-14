@@ -9,13 +9,14 @@ class Tile:
         self.images = images
         self.location = f"{column}{row}"
         d = {0: "gray", 1: "wheat1"}
-        column_value = Letter[column.upper()].value
+        column_value = Letter.to_num(column)
         self.base_colour = d[(row + column_value) % 2]
         d = {"gray": "empty_tile_1", "wheat1": "empty_tile_2"}
         self.base_image = images[d[self.base_colour]]
         self.selected = False
         self.highlighted = False
         self.button = None
+        self.has_piece = False
 
         self.make_button(row, column)
 
@@ -28,8 +29,8 @@ class Tile:
         )
         self.set_bg()
         self.set_img()
-        self.button.grid(row=8 - row, column=Letter[column.upper()].value)
-        self.button.bind("<Button-3>", lambda event: self.configure_selection())
+        self.button.grid(row=8 - row, column=Letter.to_num(column))
+        self.button.bind("<Button-3>", lambda event: self.change_selection())
 
     def set_piece(self):
         location = self.location
@@ -39,26 +40,27 @@ class Tile:
             piece = pieces[location]
             image_name = f"{piece.type}_{piece.colour}"
             button_image = self.images[image_name]
+            self.has_piece = True
         else:
             button_image = self.base_image
+            self.has_piece = False
         self.set_bg()
         self.set_img(button_image)
 
-    def configure_selection(self):
+    def change_selection(self):
         self.highlighted = not self.highlighted
         d = {
             "wheat1": ("PaleTurquoise1", "empty_tile_2_selected"),
             "gray": ("PaleTurquoise3", "empty_tile_1_selected"),
         }
 
-        piece_present = self.location in self.game.pieces.keys()
         if self.highlighted:
             self.set_bg(d[self.base_colour][0])
-            if not piece_present:
+            if not self.has_piece:
                 self.set_img(self.images[d[self.base_colour][1]])
         else:
             self.set_bg()
-            if not piece_present:
+            if not self.has_piece:
                 self.set_img()
 
     def set_bg(self, bg=None):
@@ -85,7 +87,8 @@ class Tile:
 def load_photo_images():
     photo_images = dict()
     for image in image_names:
-        loaded_image = Image.open(f"piece_images/{image}.png")
+        file_name = f"piece_images/{image}.png"
+        loaded_image = Image.open(file_name)
         resized_image = loaded_image.resize((50, 50), Image.Resampling.LANCZOS)
         photo_images[image] = ImageTk.PhotoImage(resized_image)
     return photo_images

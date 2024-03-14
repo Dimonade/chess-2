@@ -1,4 +1,4 @@
-from constants import Colour, Letter
+from constants import Colour
 
 
 class Game:

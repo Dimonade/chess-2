@@ -5,7 +5,7 @@ from pieces import PieceName
 def create_pieces(game):
     def add_piece(piece_type, piece_colour, piece_location):
         game.pieces[piece_location] = piece_type.get_piece_class()(
-            piece_colour.name.lower(), piece_location, game.pieces, game.tiles
+            piece_colour.name.lower(), piece_location, game
         )
 
     add_piece(PieceName.ROOK, Colour.WHITE, "a1")

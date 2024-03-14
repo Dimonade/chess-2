@@ -30,6 +30,10 @@ class Coordinate:
         row = int(string_in[1])
         return cls(row=row, column=column)
 
+    @classmethod
+    def create_from_strs(cls, string1, string2):
+        return cls.create_from_str(string1), cls.create_from_str(string2)
+
 
 class Vector:
     def __init__(self, row, column):

@@ -1,8 +1,9 @@
 from audio import make_sound
 from abstract_piece import movement
-from pieces import attempt_promote
+from pieces import Queen, Rook, Bishop, Knight
 from selection import Selection
 from en_passant import EnPassantMaker
+import tkinter as tk
 
 
 class MoveMaker:
@@ -31,11 +32,7 @@ class MoveMaker:
         if self.is_piece_player_colour():
             selection.set_first_tile(location, pieces[location])
             piece = selection.piece
-
-            if piece.type == "pawn":
-                piece.get_legal_moves(self.ep)
-            else:
-                piece.get_legal_moves()
+            piece.get_legal_moves()
 
     def second_tile_pressed(self):
         self.selection.second_tile = self.location
@@ -98,7 +95,7 @@ class MoveMaker:
         self.complete_castling()
         self.ep.complete_en_passant(tile2, pieces)
         self.ep.set_en_passant(piece, tile1, tile2)
-        prom = attempt_promote(piece, pieces, game.tiles)
+        prom = self.attempt_promote()
         check = False
         if game.print_move_on:
             print_move(piece, tile2, prom, is_attacking, tile1, check)
@@ -123,6 +120,55 @@ class MoveMaker:
             return pieces[location].colour
         else:
             return "piece does not exist"
+
+    def attempt_promote(self) -> tuple:
+        piece = self.selection.piece
+        game_pieces = self.game.pieces
+        game_tiles = self.game.tiles
+        if piece.type == "pawn" and piece.location[1] in {"1", "8"}:
+            win = tk.Toplevel()
+            win.title("Promotion")
+            selection = tk.StringVar(master=win, value="Q")
+            submission_made = tk.BooleanVar(master=win, value=False)
+            message_label = tk.Label(master=win, text="Please choose promotion")
+            message_label.grid(row=0, column=0)
+
+            def make_radio_button(text, value, row):
+                radio_button = tk.Radiobutton(
+                    master=win, text=text, variable=selection, value=value
+                )
+                radio_button.grid(row=row, column=0)
+
+            make_radio_button("Queen", "Q", 1)
+            make_radio_button("Rook", "R", 2)
+            make_radio_button("Bishop", "B", 3)
+            make_radio_button("Knight", "K", 4)
+
+            def get_choice(piece):
+                game = self.game
+                x1, x2 = piece.colour, piece.location
+                d = {
+                    "q": Queen(x1, x2, game),
+                    "k": Knight(x1, x2, game),
+                    "b": Bishop(x1, x2, game),
+                    "r": Rook(x1, x2, game),
+                }
+                game_pieces[piece.location] = d[selection.get()[0].lower()]
+                submission_made.set(True)
+
+            submit_button = tk.Button(
+                master=win,
+                text="select",
+                command=lambda: get_choice(piece),
+            )
+            submit_button.grid(row=5, column=0)
+
+            win.waitvar(submission_made)
+            win.destroy()
+            return True, selection.get()[0].upper()
+
+        else:
+            return False, ""
 
 
 def print_move(piece, location, prom, attacking, old_location, check):

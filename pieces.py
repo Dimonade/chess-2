@@ -1,6 +1,4 @@
-import tkinter as tk
-from abstract_piece import Piece, movement, get_attacked_positions
-from constants import Colour
+from abstract_piece import Piece, movement
 from enum import Enum
 
 
@@ -26,35 +24,23 @@ class PieceName(Enum):
 
 
 class Pawn(Piece):
-    def __init__(self, colour, location, game_pieces, game_tiles):
-        super().__init__(colour, "pawn", location, game_pieces, game_tiles)
+    def __init__(self, colour, location, game):
+        super().__init__(colour, "pawn", location, game)
         self.unmoved = True
 
-    def get_legal_moves(self, en_passant_manager):
-        self.legal_moves.clear()
-        for location in self.game_tiles.keys():
-            filled = False
-            if location in self.game_pieces.keys():
-                filled = True
-            not_filled_with_same_colour = True
-            if filled:
-                if self.game_pieces[location].colour == self.colour:
-                    not_filled_with_same_colour = False
-            m1, m2 = movement(location, self.location)
-            c1 = 3 > m2 > 0 and self.colour == "white"
-            c2 = -3 < m2 < 0 and self.colour == "black"
-            c4 = abs(m1) == 0 and not filled
-            c8 = location == en_passant_manager.tile
-            c6 = abs(m1) == 1 and (filled or c8)
-            c5 = {abs(m1), abs(m2)} != {1, 2}
-            c7 = (self.unmoved and self.is_move_blocked(location) is False) or abs(
-                m2
-            ) == 1
-            if (c1 or c2) and (c4 or c6) and c5 and c7 and not_filled_with_same_colour:
-                self.legal_moves.add(location)
-                self.game_tiles[location].configure_selection()
-        if self.location in self.legal_moves:
-            self.legal_moves.remove(self.location)
+    def piece_custom_rule(self, target_location):
+        m1, m2 = movement(target_location, self.location)
+        filled = target_location in self.game.pieces.keys()
+        c1 = 3 > m2 > 0 and self.colour == "white"
+        c2 = -3 < m2 < 0 and self.colour == "black"
+        c4 = abs(m1) == 0 and not filled
+        c8 = target_location == self.game.move_maker.ep.tile
+        c6 = abs(m1) == 1 and (filled or c8)
+        c5 = {abs(m1), abs(m2)} != {1, 2}
+        c7 = (self.unmoved and self.is_move_blocked(target_location) is False) or abs(
+            m2
+        ) == 1
+        return (c1 or c2) and (c4 or c6) and c5 and c7
 
     def is_attack_valid(self, m1, m2, location):
         c1 = abs(m1) == 1
@@ -65,216 +51,87 @@ class Pawn(Piece):
 
 
 class Rook(Piece):
-    def __init__(self, colour, location, game_pieces, game_tiles):
-        super().__init__(colour, "rook", location, game_pieces, game_tiles)
+    def __init__(self, colour, location, game):
+        super().__init__(colour, "rook", location, game)
         self.unmoved = True
 
-    def get_legal_moves(self, mode="normal"):
-        self.legal_moves.clear()
-        for location in self.game_tiles.keys():
-            not_filled_with_same_colour = True
-            if location in self.game_pieces.keys():
-                if self.game_pieces[location].colour == self.colour:
-                    not_filled_with_same_colour = False
-            m1, m2 = movement(location, self.location)
-            if (
-                0 in {m1, m2}
-                and not_filled_with_same_colour
-                and not self.is_move_blocked(location)
-            ):
-                self.legal_moves.add(location)
-                if mode == "normal":
-                    self.game_tiles[location].configure_selection()
-        if self.location in self.legal_moves:
-            self.legal_moves.remove(self.location)
-
-    def is_attack_valid(self, m1, m2, location):
-        c1 = 0 in {m1, m2}
-        c2 = not self.is_move_blocked(location)
-        return all([c1, c2])
+    def piece_custom_rule(self, target_location):
+        """is orthogonal"""
+        m1, m2 = movement(target_location, self.location)
+        return 0 in {m1, m2}
 
 
 class Knight(Piece):
-    def __init__(self, colour, location, game_pieces, game_tiles):
-        super().__init__(colour, "knight", location, game_pieces, game_tiles)
+    def __init__(self, colour, location, game):
+        super().__init__(colour, "knight", location, game)
 
-    def get_legal_moves(self):
-        self.legal_moves.clear()
-        for location in self.game_tiles.keys():
-            not_filled_with_same_colour = True
-            if location in self.game_pieces.keys():
-                if self.game_pieces[location].colour == self.colour:
-                    not_filled_with_same_colour = False
-            m1, m2 = movement(location, self.location)
-            if {abs(m1), abs(m2)} == {1, 2} and not_filled_with_same_colour:
-                self.legal_moves.add(location)
-                self.game_tiles[location].configure_selection()
-        if self.location in self.legal_moves:
-            self.legal_moves.remove(self.location)
+    def piece_custom_rule(self, target_location):
+        """is L shape"""
+        m1, m2 = movement(target_location, self.location)
+        return {abs(m1), abs(m2)} == {1, 2}
 
     def is_move_blocked(self, new_location):
         self.new_location = new_location
         return False
 
-    def is_attack_valid(self, m1, m2, location):
-        c1 = {abs(m1), abs(m2)} == {1, 2}
-        return c1
-
 
 class Bishop(Piece):
-    def __init__(self, colour, location, game_pieces, game_tiles):
-        super().__init__(colour, "bishop", location, game_pieces, game_tiles)
+    def __init__(self, colour, location, game):
+        super().__init__(colour, "bishop", location, game)
 
-    def get_legal_moves(self):
-        self.legal_moves.clear()
-        for location in self.game_tiles.keys():
-            not_filled_with_same_colour = True
-            if location in self.game_pieces.keys():
-                if self.game_pieces[location].colour == self.colour:
-                    not_filled_with_same_colour = False
-            m1, m2 = movement(location, self.location)
-            if (
-                abs(m1) == abs(m2)
-                and not_filled_with_same_colour
-                and not self.is_move_blocked(location)
-            ):
-                self.legal_moves.add(location)
-                self.game_tiles[location].configure_selection()
-        if self.location in self.legal_moves:
-            self.legal_moves.remove(self.location)
-
-    def is_attack_valid(self, m1, m2, location):
-        c1 = abs(m1) == abs(m2)
-        c2 = not self.is_move_blocked(location)
-        return all([c1, c2])
+    def piece_custom_rule(self, target_location):
+        """is diagonal"""
+        m1, m2 = movement(target_location, self.location)
+        return abs(m1) == abs(m2)
 
 
 class Queen(Piece):
-    def __init__(self, colour, location, game_pieces, game_tiles):
-        super().__init__(colour, "queen", location, game_pieces, game_tiles)
+    def __init__(self, colour, location, game):
+        super().__init__(colour, "queen", location, game)
 
-    def get_legal_moves(self):
-        lm = self.legal_moves
-        tiles = self.game_tiles
-        pieces = self.game_pieces
-
-        lm.clear()
-        for location in tiles.keys():
-            not_same_colour = True
-            if location in pieces.keys():
-                if pieces[location].colour == self.colour:
-                    not_same_colour = False
-            m1, m2 = movement(location, self.location)
-            c1 = 0 in {m1, m2} or abs(m1) == abs(m2)
-            if c1 and not_same_colour and not self.is_move_blocked(location):
-                lm.add(location)
-                tiles[location].configure_selection()
-        if self.location in self.attack_moves:
-            lm.remove(self.location)
-
-    def is_attack_valid(self, m1, m2, location):
-        c1 = 0 in {m1, m2} or abs(m1) == abs(m2)
-        c2 = not self.is_move_blocked(location)
-        return c1 and c2
+    def piece_custom_rule(self, target_location):
+        """is diagonal or orthogonal"""
+        m1, m2 = movement(target_location, self.location)
+        return 0 in {m1, m2} or abs(m1) == abs(m2)
 
 
 class King(Piece):
-    def __init__(self, colour, location, game_pieces, game_tiles):
-        super().__init__(colour, "king", location, game_pieces, game_tiles)
+    def __init__(self, colour, location, game):
+        super().__init__(colour, "king", location, game)
         self.in_check = False
         self.unmoved = True
 
-    def get_legal_moves(self):
-        self.legal_moves.clear()
-        o = Colour.get_opposite(self.colour)
-        ap = get_attacked_positions(self.game_pieces, attacked_by=o)
-        for location in self.game_tiles.keys():
-            # not filled with same colour
-            not_filled_with_same_colour = True
-            if location in self.game_pieces.keys():
-                if self.game_pieces[location].colour == self.colour:
-                    not_filled_with_same_colour = False
+    def piece_custom_rule(self, target_location):
+        king_castling_locations = (
+            ("c1", "e1"),
+            ("g1", "e1"),
+            ("c8", "e8"),
+            ("g8", "e8"),
+        )
+        end, start = target_location, self.location
+        king_can_castle = (end, start) in king_castling_locations and self.unmoved
+        rook_can_castle = self.can_rook_castle(target_location)
+        are_castle_conditions_met = king_can_castle and rook_can_castle
 
-            m1, m2 = movement(location, self.location)
-            c1 = abs(m1) <= 1
-            c2 = abs(m2) <= 1
-            king_castling_locations = (
-                ("c1", "e1"),
-                ("g1", "e1"),
-                ("c8", "e8"),
-                ("g8", "e8"),
-            )
-            c6 = (
-                location,
-                self.location,
-            ) in king_castling_locations and self.unmoved
-            c7 = self.can_rook_castle(location)
-            c3 = not_filled_with_same_colour
-            c4 = location not in ap
-            c5 = not self.is_move_blocked(location)
-            if ((c1 and c2) or (c6 and c7)) and c3 and c4 and c5:
-                self.legal_moves.add(location)
-                self.game_tiles[location].configure_selection()
-        if self.location in self.legal_moves:
-            self.legal_moves.remove(self.location)
+        return (
+            self.is_valid_normal_king_move(target_location) or are_castle_conditions_met
+        )
+
+    def is_valid_normal_king_move(self, target_location):
+        m1, m2 = movement(target_location, self.location)
+        return abs(m1) <= 1 and abs(m2) <= 1
 
     def is_attack_valid(self, m1, m2, location):
-        c1 = abs(m1) <= 1
-        c2 = abs(m2) <= 1
-        return all([c1, c2])
+        return self.is_valid_normal_king_move(location)
 
     def can_rook_castle(self, new_location):
         """If the king were to castle is there a rook available?"""
         r_old = {"g8": "h8", "c8": "a8", "g1": "h1", "c1": "a1"}
         r_new = {"g8": "f8", "c8": "d8", "g1": "f1", "c1": "d1"}
         if new_location in r_old.keys():
-            if r_old[new_location] in self.game_pieces.keys():
-                rook_loc = self.game_pieces[r_old[new_location]]
+            if r_old[new_location] in self.game.pieces.keys():
+                rook_loc = self.game.pieces[r_old[new_location]]
                 if rook_loc.unmoved and rook_loc.type == "rook":
                     rook_loc.get_legal_moves(mode="castling")
                     return r_new[new_location] in rook_loc.legal_moves
         return False
-
-
-def attempt_promote(piece, game_pieces, game_tiles) -> tuple:
-    if piece.type == "pawn" and piece.location[1] in {"1", "8"}:
-        win = tk.Toplevel()
-        win.title("Promotion")
-        selection = tk.StringVar(master=win, value="Q")
-        submission_made = tk.BooleanVar(master=win, value=False)
-        message_label = tk.Label(master=win, text="Please choose promotion")
-        message_label.grid(row=0, column=0)
-
-        def make_radio_button(text, value, row):
-            _ = tk.Radiobutton(master=win, text=text, variable=selection, value=value)
-            _.grid(row=row, column=0)
-
-        make_radio_button("Queen", "Q", 1)
-        make_radio_button("Rook", "R", 2)
-        make_radio_button("Bishop", "B", 3)
-        make_radio_button("Knight", "K", 4)
-
-        def get_choice(piece, game_pieces, game_tiles):
-            x1, x2 = piece.colour, piece.location
-            d = {
-                "q": Queen(x1, x2, game_pieces, game_tiles),
-                "k": Knight(x1, x2, game_pieces, game_tiles),
-                "b": Bishop(x1, x2, game_pieces, game_tiles),
-                "r": Rook(x1, x2, game_pieces, game_tiles),
-            }
-            game_pieces[piece.location] = d[selection.get()[0].lower()]
-            submission_made.set(True)
-
-        submit_button = tk.Button(
-            master=win,
-            text="select",
-            command=lambda: get_choice(piece, game_pieces, game_tiles),
-        )
-        submit_button.grid(row=5, column=0)
-
-        win.waitvar(submission_made)
-        win.destroy()
-        return True, selection.get()[0].upper()
-
-    else:
-        return False, ""

@@ -3,15 +3,14 @@ from coordinate import Coordinate
 
 
 class Piece:
-    def __init__(self, colour, piece_type, location, game_pieces, game_tiles):
-        self.game_pieces = game_pieces
-        self.game_tiles = game_tiles
+    def __init__(self, colour, piece_type, location, game):
+        self.game = game
         self.colour = colour
         self.type = piece_type
         self.location = location
         self.new_location = ""
         self.enemy_colour = Colour.get_opposite(colour)
-        self.enemy_king_location = get_king(game_pieces, self.enemy_colour)
+        self.enemy_king_location = get_king(self.game.pieces, self.enemy_colour)
         self.legal_moves = set()
         self.attack_moves = set()
 
@@ -21,15 +20,15 @@ class Piece:
     def move_to(self, new_location: str):
         """moves piece to new location"""
         self.remove()
-        self.game_pieces[new_location] = self
+        self.game.pieces[new_location] = self
         self.location = new_location
         self.unmoved = False
 
     def remove(self):
         """removes piece from game pieces"""
-        del self.game_pieces[self.location]
+        del self.game.pieces[self.location]
 
-    def find_direction(self):
+    def get_direction(self):
         def sign(x):
             return -1 if x < 0 else (1 if x > 0 else 0)
 
@@ -41,11 +40,11 @@ class Piece:
 
     def is_move_blocked(self, new_location):
         self.new_location = new_location
-        direction = self.find_direction()
+        direction = self.get_direction()
         if direction != "invalid":
             location = add_coordinate(self.location, direction)
             while location != new_location:
-                if location in self.game_pieces.keys():
+                if location in self.game.pieces.keys():
                     return True
                 location = add_coordinate(location, direction)
             return False
@@ -58,17 +57,49 @@ class Piece:
         piece_location = self.location
 
         am.clear()
-        for location in self.game_tiles.keys():
+        for location in self.game.tiles.keys():
             m1, m2 = movement(location, piece_location)
             if self.is_attack_valid(m1, m2, location):
                 am.add(location)
         if piece_location in am:
             am.remove(piece_location)
 
+    def piece_custom_rule(self, location):
+        pass
+
+    def get_legal_moves(self, mode="normal"):
+        lm = self.legal_moves
+        tiles = self.game.tiles
+
+        lm.clear()
+        for location in tiles.keys():
+            same_colour = self.has_piece_with_same_colour(location)
+            move_blocked = self.is_move_blocked(location)
+            if (
+                self.piece_custom_rule(location)
+                and not same_colour
+                and not move_blocked
+            ):
+                lm.add(location)
+                if mode == "normal":
+                    tiles[location].change_selection()
+        if self.location in self.attack_moves:
+            lm.remove(self.location)
+
+    def is_attack_valid(self, m1, m2, location):
+        return self.piece_custom_rule(location) and not self.is_move_blocked(location)
+
+    def has_piece_with_same_colour(self, location):
+        same_colour = False
+        pieces = self.game.pieces
+        if location in pieces.keys():
+            if pieces[location].colour == self.colour:
+                same_colour = True
+        return same_colour
+
 
 def movement(location1: str, location2: str) -> tuple:
-    c1 = Coordinate.create_from_str(location1)
-    c2 = Coordinate.create_from_str(location2)
+    c1, c2 = Coordinate.create_from_strs(location1, location2)
     return Coordinate.diff_vector(c1, c2)
 
 
