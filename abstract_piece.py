@@ -63,6 +63,7 @@ class Piece:
                 am.add(location)
         if piece_location in am:
             am.remove(piece_location)
+        return am
 
     def piece_custom_rule(self, location):
         pass
@@ -85,6 +86,44 @@ class Piece:
                     tiles[location].change_selection()
         if self.location in self.attack_moves:
             lm.remove(self.location)
+
+    def get_legal_moves_with_check(self, mode):
+        self.get_legal_moves("different")
+        res = []
+        for move in self.legal_moves:
+            if not self.would_result_in_self_check(move):
+                res.append(move)
+        if mode == "normal":
+            for location in res:
+                self.game.tiles[location].change_selection()
+        return res
+
+    def would_result_in_self_check(self, target_location):
+        would_result_in_check = False
+
+        capturing_piece = False
+        captured_piece = None
+        if target_location in self.game.pieces.keys():
+            capturing_piece = True
+            captured_piece = self.game.pieces[target_location]
+
+        del self.game.pieces[self.location]
+        self.game.pieces[target_location] = self
+
+        player_king_location = self.game.get_king_location(self.colour)
+        if self.type == "king":
+            player_king_location = target_location
+        opposing_colour = Colour.get_opposite(self.colour)
+
+        for piece in self.game.pieces_of_specific_colour(opposing_colour):
+            if player_king_location in piece.attack_moves:
+                would_result_in_check = True
+
+        del self.game.pieces[target_location]
+        self.game.pieces[self.location] = self
+        if capturing_piece:
+            self.game.pieces[target_location] = captured_piece
+        return would_result_in_check
 
     def is_attack_valid(self, m1, m2, location):
         return self.piece_custom_rule(location) and not self.is_move_blocked(location)

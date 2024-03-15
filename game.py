@@ -5,9 +5,9 @@ from constants import Colour
 
 class Game:
     def __init__(self, gui_components):
-        self.tiles = {}
-        self.pieces = {}
-        self.print_move_on = True
+        self.tiles = dict()
+        self.pieces = dict()
+        self.print_move_on = False
 
         self.root = gui_components[0]
         self.chessboard = gui_components[1]
@@ -19,6 +19,9 @@ class Game:
         self.white_in_check = False
         self.black_in_check = False
 
+    def pieces_of_specific_colour(self, colour):
+        return [piece for piece in self.pieces.values() if piece.colour == colour]
+
     def reset_all_tiles(self):
         for tile in self.tiles.values():
             tile.reset()
@@ -26,6 +29,11 @@ class Game:
     def next_turn(self):
         self.increment_move_number()
         self.next_player()
+
+    def get_king_location(self, colour):
+        for location, piece in self.pieces.items():
+            if piece.colour == colour and piece.type == "king":
+                return location
 
     def increment_move_number(self):
         if self.player.get() == "white":

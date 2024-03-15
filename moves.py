@@ -5,6 +5,8 @@ from abstract_piece import difference_vector
 from selection import Selection
 from en_passant import EnPassantMaker
 from pawnpromoter import PawnPromoter
+from constants import Colour
+from tkinter import messagebox
 
 
 class MoveMaker:
@@ -35,7 +37,7 @@ class MoveMaker:
 
             selection.set_first_tile(location, pieces[location])
             piece = selection.piece
-            piece.get_legal_moves()
+            piece.get_legal_moves_with_check(mode="normal")
 
     def second_tile_selected(self):
         """given tile is the second selection complete the selection process"""
@@ -64,8 +66,6 @@ class MoveMaker:
         piece = selection.piece
         location = selection.second_tile
         conditions = [
-            not piece.is_move_blocked(location),
-            not self.get_piece_colour() == self.game.player.get(),
             location in piece.legal_moves,
         ]
         return all(conditions)
@@ -106,18 +106,42 @@ class MoveMaker:
         self.ep.set_en_passant(piece, tile1, tile2)
         pp = PawnPromoter(piece, game)
         prom = pp.attempt_promote()
-        check = False
+        if prom[0]:
+            piece = self.game.pieces[self.location]
+
+        enemy_colour = Colour.get_opposite(game.player.get())
+        enemy_king_location = game.get_king_location(enemy_colour)
+        check = enemy_king_location in piece.get_attacks()
+        if check:
+            if enemy_colour == "white":
+                game.white_in_check = True
+            if enemy_colour == "black":
+                game.black_in_check = True
+        else:
+            game.white_in_check = False
+            game.black_in_check = False
+        # if self.number_of_legal_moves_of_opponent() == 0:
+        #     self.game_over()
+
         if game.print_move_on:
             print_move(piece, tile2, prom, is_attacking, tile1, check)
         make_sound(check, is_attacking)
         game.next_turn()
 
-    def number_of_legal_moves(self):
+    def game_over(self):
+        if self.game.black_in_check:
+            messagebox.showinfo("game over", "white wins - black in checkmate")
+        elif self.game.white_in_check:
+            messagebox.showinfo("game over", "black wins  - white in checkmate")
+        else:
+            messagebox.showinfo("game over", "draw - stalemate")
+
+    def number_of_legal_moves_of_opponent(self):
         """return the number of legal moves of the given piece"""
         legal_moves = 0
         for piece in self.game.pieces.values():
             if piece.colour == self.selection.enemy_colour:
-                piece.get_legal_moves()
+                piece.get_legal_moves_with_check(mode="different")
                 legal_moves += len(piece.legal_moves)
         return legal_moves
 
