@@ -1,3 +1,5 @@
+"""contains Enums and images for tile.py"""
+
 from enum import Enum
 
 

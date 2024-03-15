@@ -1,3 +1,5 @@
+"""contains data of the selection made in moves.py"""
+
 from constants import Colour
 
 

@@ -1,3 +1,5 @@
+"""used to manage audio in moves.py"""
+
 import os
 import platform
 

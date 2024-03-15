@@ -1,3 +1,5 @@
+"""sets up the GUI interface"""
+
 from constants import Letter
 import tkinter as tk
 from tkinter import messagebox

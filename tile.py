@@ -1,3 +1,5 @@
+"""the tile class controls the buttons (tiles) in the chessboard frame of the gui"""
+
 from constants import Letter, image_names
 import tkinter as tk
 from PIL import Image, ImageTk

@@ -1,3 +1,5 @@
+"""holds the game data"""
+
 from constants import Colour
 
 
@@ -22,10 +24,10 @@ class Game:
             tile.reset()
 
     def next_turn(self):
-        self.update_move_number()
+        self.increment_move_number()
         self.next_player()
 
-    def update_move_number(self):
+    def increment_move_number(self):
         if self.player.get() == "white":
             mn = self.move_number
             mn.set(mn.get() + 1)

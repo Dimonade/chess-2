@@ -1,3 +1,5 @@
+"""entry point into the chess game"""
+
 from game import Game
 from moves import MoveMaker
 from setup_board import create_pieces

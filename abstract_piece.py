@@ -1,3 +1,5 @@
+"""contains an abstract class Piece used by all the subclasses in pieces.py, as well as extra functions"""
+
 from constants import Colour, Letter
 from coordinate import Coordinate
 
@@ -13,9 +15,7 @@ class Piece:
         self.enemy_king_location = get_king(self.game.pieces, self.enemy_colour)
         self.legal_moves = set()
         self.attack_moves = set()
-
-    def __str__(self):
-        return f"{self.colour} {self.type} at {self.location}"
+        self.unmoved = True
 
     def move_to(self, new_location: str):
         """moves piece to new location"""
@@ -32,7 +32,7 @@ class Piece:
         def sign(x):
             return -1 if x < 0 else (1 if x > 0 else 0)
 
-        v1, v2 = movement(self.new_location, self.location)
+        v1, v2 = difference_vector(self.new_location, self.location)
         if 0 in (v1, v2) or abs(v1) == abs(v2):
             return sign(v1), sign(v2)
         else:
@@ -58,7 +58,7 @@ class Piece:
 
         am.clear()
         for location in self.game.tiles.keys():
-            m1, m2 = movement(location, piece_location)
+            m1, m2 = difference_vector(location, piece_location)
             if self.is_attack_valid(m1, m2, location):
                 am.add(location)
         if piece_location in am:
@@ -90,6 +90,8 @@ class Piece:
         return self.piece_custom_rule(location) and not self.is_move_blocked(location)
 
     def has_piece_with_same_colour(self, location):
+        """if location contains piece and this piece is the same this current piece's colour return True else return
+        false"""
         same_colour = False
         pieces = self.game.pieces
         if location in pieces.keys():
@@ -98,7 +100,7 @@ class Piece:
         return same_colour
 
 
-def movement(location1: str, location2: str) -> tuple:
+def difference_vector(location1: str, location2: str) -> tuple:
     c1, c2 = Coordinate.create_from_strs(location1, location2)
     return Coordinate.diff_vector(c1, c2)
 

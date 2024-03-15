@@ -1,8 +1,10 @@
-from abstract_piece import Piece, movement
+"""contains all the different piece classes e.g. Pawn, Rook etc."""
+
+from abstract_piece import Piece, difference_vector
 from enum import Enum
 
 
-class PieceName(Enum):
+class PieceEnum(Enum):
     PAWN = 1
     ROOK = 2
     KNIGHT = 3
@@ -26,38 +28,58 @@ class PieceName(Enum):
 class Pawn(Piece):
     def __init__(self, colour, location, game):
         super().__init__(colour, "pawn", location, game)
-        self.unmoved = True
 
     def piece_custom_rule(self, target_location):
-        m1, m2 = movement(target_location, self.location)
-        filled = target_location in self.game.pieces.keys()
-        c1 = 3 > m2 > 0 and self.colour == "white"
-        c2 = -3 < m2 < 0 and self.colour == "black"
-        c4 = abs(m1) == 0 and not filled
-        c8 = target_location == self.game.move_maker.ep.tile
-        c6 = abs(m1) == 1 and (filled or c8)
-        c5 = {abs(m1), abs(m2)} != {1, 2}
-        c7 = (self.unmoved and self.is_move_blocked(target_location) is False) or abs(
-            m2
-        ) == 1
-        return (c1 or c2) and (c4 or c6) and c5 and c7
+        """returns true is target_location can be reached by pawn"""
+        h, v = difference_vector(target_location, self.location)
+        # h is horizontal, v is vertical
+
+        v_valid = self.vertical_movement_is_valid(v)
+        h_valid = self.horizontal_movement_is_valid(h, target_location)
+        not_knight_move = {abs(h), abs(v)} != {1, 2}
+        only_moved_two_spaces_if_unmoved = self.unmoved or abs(v) == 1
+
+        conditions = [
+            v_valid,
+            h_valid,
+            not_knight_move,
+            only_moved_two_spaces_if_unmoved,
+        ]
+        return all(conditions)
+
+    def vertical_movement_is_valid(self, vertical_movement):
+        white_valid = self.colour == "white" and vertical_movement in {1, 2}
+        black_valid = self.colour == "black" and vertical_movement in {-1, -2}
+        return white_valid or black_valid
+
+    def horizontal_movement_is_valid(self, horizontal_movement, target_location):
+        h = horizontal_movement
+        piece_is_present = target_location in self.game.pieces.keys()
+        en_passant_tile = self.game.move_maker.ep.tile
+        non_attacking_valid = h == 0 and not piece_is_present
+        attacking_valid = h in {-1, 1} and (
+            piece_is_present or target_location == en_passant_tile
+        )
+        return non_attacking_valid or attacking_valid
 
     def is_attack_valid(self, m1, m2, location):
-        c1 = abs(m1) == 1
-        c2 = (m2 == 1 and self.colour == "white") or (
-            m2 == -1 and self.colour == "black"
-        )
-        return all([c1, c2])
+        horizontal_valid = abs(m1) == 1
+
+        white_valid = m2 == 1 and self.colour == "white"
+        black_valid = m2 == -1 and self.colour == "black"
+
+        vertical_valid = white_valid or black_valid
+
+        return horizontal_valid and vertical_valid
 
 
 class Rook(Piece):
     def __init__(self, colour, location, game):
         super().__init__(colour, "rook", location, game)
-        self.unmoved = True
 
     def piece_custom_rule(self, target_location):
         """is orthogonal"""
-        m1, m2 = movement(target_location, self.location)
+        m1, m2 = difference_vector(target_location, self.location)
         return 0 in {m1, m2}
 
 
@@ -67,7 +89,7 @@ class Knight(Piece):
 
     def piece_custom_rule(self, target_location):
         """is L shape"""
-        m1, m2 = movement(target_location, self.location)
+        m1, m2 = difference_vector(target_location, self.location)
         return {abs(m1), abs(m2)} == {1, 2}
 
     def is_move_blocked(self, new_location):
@@ -81,7 +103,7 @@ class Bishop(Piece):
 
     def piece_custom_rule(self, target_location):
         """is diagonal"""
-        m1, m2 = movement(target_location, self.location)
+        m1, m2 = difference_vector(target_location, self.location)
         return abs(m1) == abs(m2)
 
 
@@ -91,7 +113,7 @@ class Queen(Piece):
 
     def piece_custom_rule(self, target_location):
         """is diagonal or orthogonal"""
-        m1, m2 = movement(target_location, self.location)
+        m1, m2 = difference_vector(target_location, self.location)
         return 0 in {m1, m2} or abs(m1) == abs(m2)
 
 
@@ -99,7 +121,6 @@ class King(Piece):
     def __init__(self, colour, location, game):
         super().__init__(colour, "king", location, game)
         self.in_check = False
-        self.unmoved = True
 
     def piece_custom_rule(self, target_location):
         king_castling_locations = (
@@ -118,7 +139,7 @@ class King(Piece):
         )
 
     def is_valid_normal_king_move(self, target_location):
-        m1, m2 = movement(target_location, self.location)
+        m1, m2 = difference_vector(target_location, self.location)
         return abs(m1) <= 1 and abs(m2) <= 1
 
     def is_attack_valid(self, m1, m2, location):

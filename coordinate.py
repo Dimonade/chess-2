@@ -1,3 +1,5 @@
+"""coordinates and vector for supporting the mathematics of the move calculations by the pieces"""
+
 from constants import Letter
 
 
