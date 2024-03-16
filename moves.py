@@ -120,26 +120,32 @@ class MoveMaker:
         else:
             game.white_in_check = False
             game.black_in_check = False
-        # if self.number_of_legal_moves_of_opponent() == 0:
-        #     self.game_over()
+        checkmate = False
+        if self.number_of_legal_moves_of_opponent() == 0:
+            self.game.root.update()
+            checkmate = self.game_over()
 
         if game.print_move_on:
-            print_move(piece, tile2, prom, is_attacking, tile1, check)
-        make_sound(check, is_attacking)
+            print_move(piece, tile2, prom, is_attacking, tile1, check, checkmate)
+        make_sound(checkmate, check, is_attacking)
         game.next_turn()
 
     def game_over(self):
+        checkmate = True
         if self.game.black_in_check:
             messagebox.showinfo("game over", "white wins - black in checkmate")
         elif self.game.white_in_check:
             messagebox.showinfo("game over", "black wins  - white in checkmate")
         else:
             messagebox.showinfo("game over", "draw - stalemate")
+            checkmate = False
+        return checkmate
 
     def number_of_legal_moves_of_opponent(self):
         """return the number of legal moves of the given piece"""
         legal_moves = 0
-        for piece in self.game.pieces.values():
+        opponent_colour = Colour.get_opposite(self.selection.piece.colour)
+        for piece in self.game.pieces_of_specific_colour(opponent_colour):
             if piece.colour == self.selection.enemy_colour:
                 piece.get_legal_moves_with_check(mode="different")
                 legal_moves += len(piece.legal_moves)
@@ -155,7 +161,7 @@ class MoveMaker:
             return "piece does not exist"
 
 
-def print_move(piece, location, prom, attacking, old_location, check):
+def print_move(piece, location, prom, attacking, old_location, check, checkmate):
     d = {
         "rook": "R",
         "bishop": "B",
@@ -175,6 +181,10 @@ def print_move(piece, location, prom, attacking, old_location, check):
             at = "x"
     else:
         at = ""
-    d2 = {False: "", True: "+", "checkmate": "#"}
-    output_string = f"{d[piece.type]}{at}{location}{promotion}{d2[check]}"
+    end_string = ""
+    if checkmate:
+        end_string = "#"
+    elif check:
+        end_string = "+"
+    output_string = f"{d[piece.type]}{at}{location}{promotion}{end_string}"
     print(output_string)

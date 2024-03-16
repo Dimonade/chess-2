@@ -96,6 +96,7 @@ class Piece:
         if mode == "normal":
             for location in res:
                 self.game.tiles[location].change_selection()
+        self.legal_moves = set(res)
         return res
 
     def would_result_in_self_check(self, target_location):
@@ -116,8 +117,12 @@ class Piece:
         opposing_colour = Colour.get_opposite(self.colour)
 
         for piece in self.game.pieces_of_specific_colour(opposing_colour):
-            if player_king_location in piece.attack_moves:
-                would_result_in_check = True
+            h, v = difference_vector(player_king_location, piece.location)
+            if h == 0 or v == 0 or abs(h) == abs(v) or {abs(v), abs(h)} == {1, 2}:
+                piece.get_attacks()
+                if player_king_location in piece.attack_moves:
+                    would_result_in_check = True
+                    break
 
         del self.game.pieces[target_location]
         self.game.pieces[self.location] = self

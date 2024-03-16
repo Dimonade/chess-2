@@ -7,7 +7,7 @@ class Game:
     def __init__(self, gui_components):
         self.tiles = dict()
         self.pieces = dict()
-        self.print_move_on = False
+        self.print_move_on = True
 
         self.root = gui_components[0]
         self.chessboard = gui_components[1]
